@@ -1,41 +1,180 @@
 <html>
   <head>
     <title>BuildingBlok JS Challenge</title>
-    <script type="text/javascript">
-      window.ourapp = {
-        successRate: 0.7,
-        offline: false,
-        results: []
-      };
-
-      function _failure(record) {
-        ourapp.results.push({saved: false, record: record, at: Date()});
-      }
-
-      function _success(record) {
-        ourapp.results.push({saved: true, record: record, at: Date()});
-      }
-
-      function saveRecord(record) {
-        if(ourapp.offline || Math.random() >= ourapp.successRate) {
-          _failure(record);
-          return false;
-        } else {
-          _success(record);
-          return true;
-        }
-      }
-
-      function toggleOffline() {
-        ourapp.offline = !ourapp.offline;
-        document.getElementById('status').innerText = ourapp.offline ? 'Offline' : 'Online';
-      }
-    </script>
+    <link rel="stylesheet" href="style.css">
+    <script src="angular.min.js"></script>
   </head>
-  <body>
-    <div>Status:
-      <span id="status">Online</span>
+  <body ng-app="recordApp">
+    <div ng-controller="RecordListCtrl">
+      <form>
+        <label>Name: </label>
+        <input type="text" ng-model="newRecord" />
+        <button id="name" ng-click="saveNameRecord(newRecord)">Save Record</button>
+      </form>
+      <form id="location" name="location">
+        <label>Address: </label><br>
+        <label>Street: </label>
+        <input type="text" name="street" ng-model="newStreet" />
+        <label>City: </label>
+        <input type="text" name="city" ng-model="newCity" />
+        <label>State: </label>
+        <select name="state" ng-model="newState">
+          <option value="AL">Alabama</option>
+          <option value="AK">Alaska</option>
+          <option value="AZ">Arizona</option>
+          <option value="AR">Arkansas</option>
+          <option value="CA">California</option>
+          <option value="CO">Colorado</option>
+          <option value="CT">Connecticut</option>
+          <option value="DE">Delaware</option>
+          <option value="DC">District Of Columbia</option>
+          <option value="FL">Florida</option>
+          <option value="GA">Georgia</option>
+          <option value="HI">Hawaii</option>
+          <option value="ID">Idaho</option>
+          <option value="IL">Illinois</option>
+          <option value="IN">Indiana</option>
+          <option value="IA">Iowa</option>
+          <option value="KS">Kansas</option>
+          <option value="KY">Kentucky</option>
+          <option value="LA">Louisiana</option>
+          <option value="ME">Maine</option>
+          <option value="MD">Maryland</option>
+          <option value="MA">Massachusetts</option>
+          <option value="MI">Michigan</option>
+          <option value="MN">Minnesota</option>
+          <option value="MS">Mississippi</option>
+          <option value="MO">Missouri</option>
+          <option value="MT">Montana</option>
+          <option value="NE">Nebraska</option>
+          <option value="NV">Nevada</option>
+          <option value="NH">New Hampshire</option>
+          <option value="NJ">New Jersey</option>
+          <option value="NM">New Mexico</option>
+          <option value="NY">New York</option>
+          <option value="NC">North Carolina</option>
+          <option value="ND">North Dakota</option>
+          <option value="OH">Ohio</option>
+          <option value="OK">Oklahoma</option>
+          <option value="OR">Oregon</option>
+          <option value="PA">Pennsylvania</option>
+          <option value="RI">Rhode Island</option>
+          <option value="SC">South Carolina</option>
+          <option value="SD">South Dakota</option>
+          <option value="TN">Tennessee</option>
+          <option value="TX">Texas</option>
+          <option value="UT">Utah</option>
+          <option value="VT">Vermont</option>
+          <option value="VA">Virginia</option>
+          <option value="WA">Washington</option>
+          <option value="WV">West Virginia</option>
+          <option value="WI">Wisconsin</option>
+          <option value="WY">Wyoming</option>
+        </select>    
+        <label>Zip Code: </label>
+        <input type="text" name="zipcode" pattern="[0-9]*" maxlength="5" min="0" ng-model="newZip" />
+        <button ng-click="saveAddressRecord(newStreet, newCity, newState, newZip)">Save Record</button>
+      </form>
+      <div>Status:
+        <span id="status">Online</span>
+      </div>
+      <button ng-click="toggleOffline()">Toggle Offline</button>
+      <br><br>
+      <table id="recordsList">
+        <th>Saved Status:</th>
+        <th>Record Saved:</th>
+        <th>Saved At:</th>
+        <tr ng-repeat="record in records | orderBy:orderProp">
+          <td>{{record.saved}}</td>
+          <td>{{record.details}}</td>
+          <td>{{record.at}}</td>
+        </li>
+      </ul>
     </div>
-    <button onclick="toggleOffline()">Toggle Offline</button>
+    <script type="text/javascript">
+      var recordApp = angular.module('recordApp', []);
+
+      recordApp.controller('RecordListCtrl', ['$scope', '$http', function ($scope, $http) {
+
+        $scope.successRate = 0.7;
+
+        $scope.offline = false;
+
+        $scope.records = [];
+
+        $scope.orderProp = 'at';
+
+        $scope.newRecord = "";
+
+        $scope.numRetries = 0;
+
+        $scope.saveNameRecord = function (record) {
+          if($scope.offline || Math.random() >= $scope.successRate) {
+            $scope._failure(record);
+            if ($scope.numRetries < 5) {
+              $scope.retrySaveRecord(record, 'name');
+            }
+            return false;
+          } else {
+            $scope._success(record);
+            return true;
+          }
+        };
+
+        $scope.saveAddressRecord = function (newStreet, newCity, newState, newZip) {
+          var newAddress = [];
+          
+          for (var i in arguments) {
+            newAddress.push(arguments[i]);
+          }
+
+          newAddress = newAddress.join(', ');
+
+          if($scope.offline || Math.random() >= $scope.successRate) {
+            $scope._failure(newAddress);
+            $scope.retrySaveRecord(newAddress, 'address');
+            return false;
+          } else {
+            $scope._success(newAddress);
+            return true;
+          }
+        };
+
+        $scope.retrySaveRecord = function (record, type) {
+          setTimeout(function() {
+            if (type === "name" && $scope.numRetries < 5) {
+              $scope.saveNameRecord(record);
+            } else if (type === "address" && $scope.numRetries < 5) {
+              $scope.saveAddressRecord(record);
+            } else {
+              console.log("ERROR: Unresolved Network Error");
+              if (!$scope.offline) {
+                $scope.toggleOffline();
+              }
+            }
+            $scope.numRetries += 1;
+            $http.get('/').success(function(data) {
+              $scope.records = data;
+            });
+          }, 5000);
+
+        };
+
+        $scope._failure = function (record) {
+          $scope.records.push({saved: "false", details: record, at: Date()});
+        };
+
+        $scope._success = function (record) {
+          $scope.records.push({saved: "true", details: record, at: Date()});
+        };
+
+        $scope.toggleOffline = function () {
+          $scope.offline = !$scope.offline;
+          document.getElementById('status').innerText = $scope.offline ? 'Offline' : 'Online';
+          $scope.offline ? $scope.records = [] : null;
+        };
+        
+      }]);
+    </script>
   </body>
 </html>
